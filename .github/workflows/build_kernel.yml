@@ -1,8 +1,8 @@
 name: Kernel Build CI
 
 on:
-    branches:
-      - main
+  branches:
+    - main
   workflow_dispatch:
 
 jobs:
