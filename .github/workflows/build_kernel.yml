@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
 
     env:
       ARCH: arm64
@@ -23,37 +23,6 @@ jobs:
         run: |
           sudo apt-get update
 
-      - name: Notify start on Telegram
-        run: |
-          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
-            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-            -d text="⚙️ BlueSea Kernel build has started..."
-
       - name: Build the kernel and log output
         run: |
           ./build.sh | tee build.log
-
-      - name: Send build log to Telegram
-        if: always()
-        run: |
-          curl -s -F document=@build.log \
-            "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument?chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -F caption="📄 Kernel build log"
-
-      - name: Send build artifacts to Telegram
-        if: success()
-        run: |
-          curl -s -F document=@out/arch/arm64/boot/Image.gz-dtb \
-            "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument?chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -F caption="Image.gz-dtb"
-
-          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
-            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-            -d text="✅ Build completed!"
-
-      - name: Notify failure on Telegram
-        if: failure()
-        run: |
-          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
-            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-            -d text="❌ Kernel build failed!"
