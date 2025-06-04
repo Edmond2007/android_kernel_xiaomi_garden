@@ -1,9 +1,6 @@
 name: Kernel Build CI
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:
@@ -14,6 +11,8 @@ jobs:
       ARCH: arm64
       CC: clang
       CLANG_TRIPLE: aarch64-linux-gnu-
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
     steps:
       - name: Checkout source code
@@ -26,3 +25,24 @@ jobs:
       - name: Build the kernel and log output
         run: |
           ./build.sh | tee build.log
+
+      - name: Upload build artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-build-artifacts
+          path: |
+            build.log
+            out/**/*.img
+            out/**/*.dtb
+            out/**/*.zip
+            out/**/*.ko
+            out/arch/arm64/boot/*
+
+      - name: Send build log to Telegram
+        if: always()
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
+            -F chat_id="${TELEGRAM_CHAT_ID}" \
+            -F document=@"build.log" \
+            -F caption="🔧 Kernel build finished: ${{ job.status }}"
